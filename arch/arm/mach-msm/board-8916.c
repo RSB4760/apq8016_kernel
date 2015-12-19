@@ -28,6 +28,55 @@
 #include "board-dt.h"
 #include "platsmp.h"
 
+#if defined(CONFIG_INPUT_ADXL34X) || defined(CONFIG_INPUT_ADXL34X_MODULE)
+#include <linux/input/adxl34x.h>
+#define IRQ_ADXL134x 115
+static const struct adxl34x_platform_data adxl34x_info = {
+	.x_axis_offset = 0,
+	.y_axis_offset = 0,
+	.z_axis_offset = 0,
+	.tap_threshold = 0x31,
+	.tap_duration = 0x10,
+	.tap_latency = 0x60,
+	.tap_window = 0xF0,
+	.tap_axis_control = ADXL_TAP_X_EN | ADXL_TAP_Y_EN | ADXL_TAP_Z_EN,
+	.act_axis_control = 0xFF,
+	.activity_threshold = 5,
+	.inactivity_threshold = 3,
+	.inactivity_time = 4,
+	.free_fall_threshold = 0x7,
+	.free_fall_time = 0x20,
+	.data_rate = 0x8,
+	.data_range = ADXL_FULL_RES,
+	.ev_type = EV_ABS,
+	.ev_code_x = ABS_X,		/* EV_REL */
+	.ev_code_y = ABS_Y,		/* EV_REL */
+	.ev_code_z = ABS_Z,		/* EV_REL */
+	.ev_code_tap = {BTN_TOUCH, BTN_TOUCH, BTN_TOUCH}, /* EV_KEY x,y,z */
+/*	.ev_code_ff = KEY_F,*/		/* EV_KEY */
+/*	.ev_code_act_inactivity = KEY_A,*/	/* EV_KEY */
+	.power_mode = ADXL_AUTO_SLEEP | ADXL_LINK,
+	.fifo_mode = ADXL_FIFO_STREAM,
+	.orientation_enable = ADXL_EN_ORIENTATION_3D,
+	.deadzone_angle = ADXL_DEADZONE_ANGLE_10p8,
+	.divisor_length = ADXL_LP_FILTER_DIVISOR_16,
+	/* EV_KEY {+Z, +Y, +X, -X, -Y, -Z} */
+	.ev_codes_orient_3d = {BTN_Z, BTN_Y, BTN_X, BTN_A, BTN_B, BTN_C},
+};
+#endif
+static struct spi_board_info board_spi_board_info[] __initdata = {
+#if defined(CONFIG_INPUT_ADXL34X_SPI) || defined(CONFIG_INPUT_ADXL34X_SPI_MODULE)
+	{
+		.modalias		= "adxl34x",
+		.platform_data		= &adxl34x_info,
+		.irq			= IRQ_ADXL134x,
+		.max_speed_hz		= 5000000,     /* max spi clock (SCK) speed in HZ */
+		.bus_num		= 1,
+		.chip_select  		= 2,
+		.mode 			= SPI_MODE_3,
+	},
+#endif
+};
 static void __init msm8916_dt_reserve(void)
 {
 	of_scan_flat_dt(dt_scan_for_memory_reserve, NULL);
@@ -72,6 +121,7 @@ static void __init msm8916_init(void)
 		pr_err("%s: socinfo_init() failed\n", __func__);
 
 	msm8916_add_drivers();
+	spi_register_board_info(board_spi_board_info, ARRAY_SIZE(board_spi_board_info));
 }
 
 static const char *msm8916_dt_match[] __initconst = {

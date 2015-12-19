@@ -74,9 +74,18 @@
 		};
 	};
 
-    spi_0 { /* BLSP1 QUP3 */
-		status = "disabled";
-    };
+
+	spi@78b9000 {
+		adi,adxl34x@0{
+			compatible = "adi,adxl34x";
+			reg = <0>;
+			spi-max-frequency = <1000000>;
+			spi-cpha = <1>;
+			spi-cpol = <1>;
+			interrupt-parent = <&msm_gpio>;
+	                interrupts = <115 0x2e>;
+		};
+        };
 
 	i2c@78b8000 { /* BLSP1 QUP4 */
 		/* DSI_TO_HDMI I2C configuration */
@@ -96,32 +105,6 @@
 		};
 	};
 
-	i2c@78b9000 { /* BLSP1 QUP5 */
-		synaptics@20 {
-			compatible = "synaptics,rmi4";
-			reg = <0x20>;
-			interrupt-parent = <&msm_gpio>;
-			interrupts = <13 0x2008>;
-			vdd-supply = <&vph_pwr_vreg>;
-			vcc_i2c-supply = <&vph_pwr_vreg>;
-			/* pins used by touchscreen */
-			pinctrl-names = "pmx_ts_active","pmx_ts_suspend","pmx_ts_suspend";
-			pinctrl-0 = <&ts_int_active &ts_reset_active>;
-			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
-			pinctrl-2 = <&ts_release>;
-			synaptics,display-coords = <0 0 1079 1919>;
-			synaptics,panel-coords = <0 0 1079 2084>;
-			synaptics,irq-gpio = <&msm_gpio 13 0x2008>;
-			synaptics,reset-gpio = <&msm_gpio 12 0x0>;
-			synaptics,i2c-pull-up;
-			synaptics,power-down;
-			synaptics,disable-gpios;
-			/* Underlying clocks used by secure touch */
-			clocks = <&clock_gcc clk_gcc_blsp1_ahb_clk>,
-			 <&clock_gcc clk_gcc_blsp1_qup5_i2c_apps_clk>;
-			clock-names = "iface_clk", "core_clk";
-		};
-	};
 
 	i2c@78ba000 { /* BLSP1 QUP6 */
         /*insert i2c_6 states expansion connector  */

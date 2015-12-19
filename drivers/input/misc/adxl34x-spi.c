@@ -119,11 +119,18 @@ static int adxl34x_spi_resume(struct device *dev)
 static SIMPLE_DEV_PM_OPS(adxl34x_spi_pm, adxl34x_spi_suspend,
 			 adxl34x_spi_resume);
 
+static const struct of_device_id adxl34x_of_match[] = {
+   { .compatible = "adi,adxl34x", },
+   { },
+};
+MODULE_DEVICE_TABLE(of, adxl34x_of_match);
+
 static struct spi_driver adxl34x_driver = {
 	.driver = {
 		.name = "adxl34x",
 		.owner = THIS_MODULE,
 		.pm = &adxl34x_spi_pm,
+		.of_match_table = adxl34x_of_match,
 	},
 	.probe   = adxl34x_spi_probe,
 	.remove  = adxl34x_spi_remove,
