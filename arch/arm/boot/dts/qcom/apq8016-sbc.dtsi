@@ -279,9 +279,9 @@
 
 &usb_otg {
 	qcom,hsusb-otg-mode = <3>;
-	qcom,usbid-gpio = <&msm_gpio 121 0>;
-	qcom,hub-reset-gpio = <&pm8916_gpios 3 0>;
-	qcom,sw-sel-gpio = <&pm8916_gpios 4 0>;
+	qcom,usbid-gpio = <&msm_gpio 110 0>;
+	qcom,hub-reset-gpio = <&pm8916_gpios 1 0>;
+	qcom,sw-sel-gpio = <&pm8916_gpios 2 0>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&usbid_default>;
 	vbus_otg-supply = <&vph_pwr_vreg>;
@@ -559,7 +559,6 @@
 
 &tlmm_pinmux {
 	usb-id-pin {
-		qcom,pins = <&gp 121>;
 	     usbid_default{
 			drive-strength = <2>;
 			bias-disable; /* no pullup */
@@ -713,40 +712,40 @@
 };
 
 &pm8916_gpios {
-	gpio@c000 { /* GPIO 1 */
-		qcom,mode = <1>;		/* Digital output */
-		qcom,pull = <4>;		/* Pull down */
-		qcom,vin-sel = <2>;		/* VIN 2*/
-		qcom,src-sel = <1>;		/* GPIO */
-		qcom,master-en = <1>;	/* Enable GPIO */
-		status = "okay";
-	};
-
-	gpio@c100 { /* GPIO 2 */
-		qcom,mode = <1>;		/* Digital output */
-		qcom,pull = <4>;		/* Pull down */
-		qcom,vin-sel = <2>;		/* VIN 2*/
-		qcom,src-sel = <1>;		/* GPIO */
-		qcom,master-en = <1>;	/* Enable GPIO */
-		status = "okay";
-	};
-
 	/* USB_HUB_RESET_N*/
-	gpio@c200 { /* GPIO 3*/
+	gpio@c000 { /* GPIO 1 */
 		qcom,mode = <1>;	/* Digital output */
 		qcom,pull = <5>;	/* No PULL */
 		qcom,vin-sel = <0>;	/* VPH */
 		qcom,src-sel = <0>;	/* CONSTANT */
-		qcom,master-en = <1>; 	/* ENABLE GPIO */
+		qcom,master-en = <1>;	/* Enable GPIO */
 		status = "okay";
 	};
 
 	/* USB_SW_SEL*/
-	gpio@c300 { /* GPIO 4 */
+	gpio@c100 { /* GPIO 2 */
 		qcom,mode = <1>;	/* Digital output */
 		qcom,pull = <5>;	/* No PULL */
 		qcom,vin-sel = <0>;	/* VPH */
 		qcom,src-sel = <0>;	/* CONSTANT */
+		qcom,master-en = <1>;	/* Enable GPIO */
+		status = "okay";
+	};
+
+	gpio@c200 { /* GPIO 3*/
+		qcom,mode = <1>;	/* Digital output */
+		qcom,pull = <4>;	/* Pull down */
+		qcom,vin-sel = <2>;	/* VIN 2 */
+		qcom,src-sel = <1>;	/* GPIO */
+		qcom,master-en = <1>; 	/* ENABLE GPIO */
+		status = "okay";
+	};
+
+	gpio@c300 { /* GPIO 4 */
+		qcom,mode = <1>;	/* Digital output */
+		qcom,pull = <4>;	/* Pull down */
+		qcom,vin-sel = <2>;	/* VIN 2 */
+		qcom,src-sel = <1>;	/* GPIO */
 		qcom,master-en = <1>; 	/* ENABLE GPIO */
 		status = "okay";
 	};
