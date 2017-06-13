@@ -18,74 +18,16 @@
 / {
 	aliases {
 		serial0 = &blsp1_uart2;
+		serial1 = &blsp1_uart1;
+		i2c0	= &i2c_6;
+		i2c2	= &i2c_4;
 	};
 };
 
 &soc {
-	i2c@78b6000 { /* BLSP1 QUP2 */
-		mpu6050@68 { /* Gyroscope and accelerometer sensor combo */
-			compatible = "invn,mpu6050";
-			reg = <0x68>;
-			pinctrl-names = "mpu_default","mpu_sleep";
-			pinctrl-0 = <&mpu6050_default>;
-			pinctrl-1 = <&mpu6050_sleep>;
-			interrupt-parent = <&msm_gpio>;
-			interrupts = <115 0x2>;
-			vdd-supply = <&vph_pwr_vreg>;
-			vlogic-supply = <&vph_pwr_vreg>;
-			vi2c-supply = <&vph_pwr_vreg>;
-			invn,gpio-int = <&msm_gpio 115 0x2>;
-			invn,place = "Portrait Down Back Side";
-		};
-
-		avago@39 { /* Ambient light and proximity sensor */
-			compatible = "avago,apds9900";
-			reg = <0x39>;
-			pinctrl-names = "default","sleep";
-			pinctrl-0 = <&apds99xx_default>;
-			pinctrl-1 = <&apds99xx_sleep>;
-			interrupt-parent = <&msm_gpio>;
-			interrupts = <113 0x2002>;
-			vdd-supply = <&vph_pwr_vreg>;
-			vio-supply = <&vph_pwr_vreg>;
-			avago,irq-gpio = <&msm_gpio 113 0x2002>;
-			avago,ps-threshold = <600>;
-			avago,ps-hysteresis-threshold = <500>;
-			avago,ps-pulse = <8>;
-			avago,ps-pgain = <0>;
-			avago,als-B = <223>;
-			avago,als-C = <70>;
-			avago,als-D = <142>;
-			avago,ga-value = <48>;
-		};
-
-		akm@c {
-			compatible = "ak,ak8963";
-			reg = <0x0c>;
-			pinctrl-names = "ak8963_default", "ak8963_sleep";
-			pinctrl-0 = <&ak8963_default>;
-			pinctrl-1 = <&ak8963_sleep>;
-			interrupt-parent = <&msm_gpio>;
-			interrupts = <69 0x2>;
-			vdd-supply = <&vph_pwr_vreg>;
-			vio-supply = <&vph_pwr_vreg>;
-			ak,layout = <0x6>;
-			ak,auto-report;
-		};
+	qcom,cci@1b0c000 {
+		status = "disabled";
 	};
-
-
-	spi@78b9000 {
-		adi,adxl34x@0{
-			compatible = "adi,adxl34x";
-			reg = <0>;
-			spi-max-frequency = <1000000>;
-			spi-cpha = <1>;
-			spi-cpol = <1>;
-			interrupt-parent = <&msm_gpio>;
-	                interrupts = <115 0x2e>;
-		};
-        };
 
 	i2c@78b8000 { /* BLSP1 QUP4 */
 		/* DSI_TO_HDMI I2C configuration */
@@ -104,7 +46,6 @@
 			adv7533,switch-gpio = <&msm_gpio 32 0x0>;
 		};
 	};
-
 
 	i2c@78ba000 { /* BLSP1 QUP6 */
         /*insert i2c_6 states expansion connector  */
@@ -244,24 +185,6 @@
 		pinctrl-0 = <&gpio_key_active>;
 		pinctrl-1 = <&gpio_key_suspend>;
 
-		camera_focus {
-			label = "camera_focus";
-			gpios = <&msm_gpio 108 0x1>;
-			linux,input-type = <1>;
-			linux,code = <0x210>;
-			gpio-key,wakeup;
-			debounce-interval = <15>;
-		};
-
-		camera_snapshot {
-			label = "camera_snapshot";
-			gpios = <&msm_gpio 109 0x1>;
-			linux,input-type = <1>;
-			linux,code = <0x2fe>;
-			gpio-key,wakeup;
-			debounce-interval = <15>;
-		};
-
 		vol_up {
 			label = "volume_up";
 			gpios = <&msm_gpio 107 0x1>;
@@ -272,6 +195,12 @@
 		};
 	};
 
+	usb2517 {
+		compatible = "smsc,usb3503";
+		reset-gpios = <&pm8916_gpios 1 1>;
+		initial-mode = <0x1>;
+	};
+
 	qcom,wcnss-wlan@0a000000 {
 		qcom,wlan-indication-enabled;
 	};
@@ -280,7 +209,7 @@
 &usb_otg {
 	qcom,hsusb-otg-mode = <3>;
 	qcom,usbid-gpio = <&msm_gpio 110 0>;
-	qcom,hub-reset-gpio = <&pm8916_gpios 1 0>;
+	qcom,hub-reset-gpio = <&pm8916_gpios 1 1>;
 	qcom,sw-sel-gpio = <&pm8916_gpios 2 0>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&usbid_default>;
@@ -349,7 +278,7 @@
 	qcom,mdss-dsi-bl-pmic-pwm-frequency = <100>;
 	qcom,mdss-dsi-bl-pmic-bank-select = <0>;
 	qcom,mdss-dsi-pwm-gpio = <&pm8916_mpps 4 0>;
-
+	status = "disabled";
 };
 
 &mdss_mdp {
@@ -558,14 +487,6 @@
 };
 
 &tlmm_pinmux {
-	usb-id-pin {
-	     usbid_default{
-			drive-strength = <2>;
-			bias-disable; /* no pullup */
-			output-low;
-		};
-	};
-
 	gpio_led_pins {
 		qcom,pins = <&gp 21>, <&gp 120>;
 		qcom,num-grp-pins = <2>;
@@ -694,20 +615,25 @@
 
 	mpp@a100 { /* MPP 2 */
 		/* HR LED */
-	};
-
-	mpp@a200 { /* MPP 3 */
-		/* VREF DAC */
-		status = "disabled";
-	};
-
-	mpp@a300 { /* MPP 4 */
-		/* Backlight PWM */
 		qcom,mode = <1>;		/* Digital output */
 		qcom,invert = <0>;		/* Disable invert */
 		qcom,src-sel = <4>;		/* DTEST1 */
 		qcom,vin-sel = <0>;		/* VPH_PWR */
 		qcom,master-en = <1>;		/* Enable MPP */
+	};
+
+	mpp@a200 { /* MPP 3 */
+		/* VREF DAC */
+		qcom,mode = <1>;		/* Digital output */
+		qcom,invert = <0>;		/* Disable invert */
+		qcom,src-sel = <4>;		/* DTEST1 */
+		qcom,vin-sel = <0>;		/* VPH_PWR */
+		qcom,master-en = <1>;		/* Enable MPP */
+	};
+
+	mpp@a300 { /* MPP 4 */
+		/* Backlight PWM */
+		status = "disabled";
 	};
 };
 
@@ -756,7 +682,7 @@
 		qcom,leds@c000  {
 			compatible = "qcom,leds-qpnp";
 			reg = <0xc000 0x100>;
-			status = "okay";
+			status = "disabled";
 			qcom,led_gpio_1 {
 				label = "gpio";
 				linux,name = "led3";
@@ -772,7 +698,7 @@
 		qcom,leds@c100  {
 			compatible = "qcom,leds-qpnp";
 			reg = <0xc100 0x100>;
-			status = "okay";
+			status = "disabled";
 			qcom,led_gpio_2 {
 				label = "gpio";
 				linux,name = "boot";
@@ -789,6 +715,9 @@
 		pm8916_pon: qcom,power-on@800 {
 			qcom,pon_1 {
 				qcom,s2-type = <7>;
+			};
+			qcom,pon_2 {
+				linux,code = <408>;
 			};
 		};
 	};
