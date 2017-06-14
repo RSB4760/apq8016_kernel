@@ -638,40 +638,40 @@
 };
 
 &pm8916_gpios {
-	/* USB_HUB_RESET_N*/
 	gpio@c000 { /* GPIO 1 */
-		qcom,mode = <1>;	/* Digital output */
-		qcom,pull = <5>;	/* No PULL */
-		qcom,vin-sel = <0>;	/* VPH */
-		qcom,src-sel = <0>;	/* CONSTANT */
-		qcom,master-en = <1>;	/* Enable GPIO */
-		status = "okay";
-	};
-
-	/* USB_SW_SEL*/
-	gpio@c100 { /* GPIO 2 */
-		qcom,mode = <1>;	/* Digital output */
-		qcom,pull = <5>;	/* No PULL */
-		qcom,vin-sel = <0>;	/* VPH */
-		qcom,src-sel = <0>;	/* CONSTANT */
-		qcom,master-en = <1>;	/* Enable GPIO */
-		status = "okay";
-	};
-
-	gpio@c200 { /* GPIO 3*/
 		qcom,mode = <1>;	/* Digital output */
 		qcom,pull = <4>;	/* Pull down */
 		qcom,vin-sel = <2>;	/* VIN 2 */
 		qcom,src-sel = <1>;	/* GPIO */
+		qcom,master-en = <1>;	/* Enable GPIO */
+		status = "okay";
+	};
+
+	gpio@c100 { /* GPIO 2 */
+		qcom,mode = <1>;	/* Digital output */
+		qcom,pull = <4>;	/* Pull down */
+		qcom,vin-sel = <2>;	/* VIN 2 */
+		qcom,src-sel = <1>;	/* GPIO */
+		qcom,master-en = <1>;	/* Enable GPIO */
+		status = "okay";
+	};
+
+	/* USB_HUB_RESET_N*/
+	gpio@c200 { /* GPIO 3*/
+		qcom,mode = <1>;	/* Digital output */
+		qcom,pull = <5>;	/* No PULL */
+		qcom,vin-sel = <0>;	/* VPH */
+		qcom,src-sel = <0>;	/* CONSTANT */
 		qcom,master-en = <1>; 	/* ENABLE GPIO */
 		status = "okay";
 	};
 
+	/* USB_SW_SEL*/
 	gpio@c300 { /* GPIO 4 */
 		qcom,mode = <1>;	/* Digital output */
-		qcom,pull = <4>;	/* Pull down */
-		qcom,vin-sel = <2>;	/* VIN 2 */
-		qcom,src-sel = <1>;	/* GPIO */
+		qcom,pull = <5>;	/* No PULL */
+		qcom,vin-sel = <0>;	/* VPH */
+		qcom,src-sel = <0>;	/* CONSTANT */
 		qcom,master-en = <1>; 	/* ENABLE GPIO */
 		status = "okay";
 	};
