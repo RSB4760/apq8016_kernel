@@ -23,3 +23,20 @@
 	qcom,board-id = <24 0>;
 
 };
+
+/* ROM-EG70 */
+&spi_0 {
+	cs-gpios = <&msm_gpio 18 0x0>;
+	spi_nor: m25p80@0 {
+		compatible = "micron,n25qba16";
+		spi-max-frequency = <20000000>;
+		reg = <0>;
+	};
+};
+
+&i2c_3 {
+	eeprom: 24c32@50 {
+		compatible = "onsemi,24c32";
+		reg = <0x50>;
+	};
+};

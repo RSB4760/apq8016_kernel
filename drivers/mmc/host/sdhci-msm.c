@@ -2607,6 +2607,12 @@ static unsigned int sdhci_msm_max_segs(void)
 	return SDHCI_MSM_MAX_SEGMENTS;
 }
 
+//[Advantech] Add support for WP
+static unsigned int sdhci_get_ro(struct sdhci_host *host)
+{
+	return mmc_gpio_get_ro(host->mmc);
+}
+
 static unsigned int sdhci_msm_get_min_clock(struct sdhci_host *host)
 {
 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
@@ -3170,6 +3176,7 @@ static struct sdhci_ops sdhci_msm_ops = {
 	.execute_tuning = sdhci_msm_execute_tuning,
 	.toggle_cdr = sdhci_msm_toggle_cdr,
 	.get_max_segments = sdhci_msm_max_segs,
+	.get_ro = sdhci_get_ro,
 	.set_clock = sdhci_msm_set_clock,
 	.get_min_clock = sdhci_msm_get_min_clock,
 	.get_max_clock = sdhci_msm_get_max_clock,

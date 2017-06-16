@@ -20,15 +20,13 @@
 		serial0 = &blsp1_uart2;
 		serial1 = &blsp1_uart1;
 		i2c0	= &i2c_6;
+		i2c1	= &cci_i2c0;
 		i2c2	= &i2c_4;
+		i2c3	= &i2c_3;
 	};
 };
 
 &soc {
-	qcom,cci@1b0c000 {
-		status = "disabled";
-	};
-
 	i2c@78b8000 { /* BLSP1 QUP4 */
 		/* DSI_TO_HDMI I2C configuration */
 		adv7533@39 {
@@ -48,7 +46,10 @@
 	};
 
 	i2c@78ba000 { /* BLSP1 QUP6 */
-        /*insert i2c_6 states expansion connector  */
+		rtc1: s35390a@30 {
+			compatible = "sii,s35390a";
+			reg = <0x30>;
+		};
 	};
 
 	/*
@@ -256,8 +257,8 @@
 	qcom,vdd-io-current-level = <200 50000>;
 
 	pinctrl-names = "active", "sleep";
-	pinctrl-0 = <&sdc2_clk_on &sdc2_cmd_on &sdc2_data_on &sdc2_cd_on>;
-	pinctrl-1 = <&sdc2_clk_off &sdc2_cmd_off &sdc2_data_off &sdc2_cd_off>;
+	pinctrl-0 = <&sdc2_clk_on &sdc2_cmd_on &sdc2_data_on &sdc2_cd_on &sdc2_wp_on>;
+	pinctrl-1 = <&sdc2_clk_off &sdc2_cmd_off &sdc2_data_off &sdc2_cd_off &sdc2_wp_off>;
 
 	#address-cells = <0>;
 	interrupt-parent = <&sdhc_2>;
@@ -269,6 +270,7 @@
 			2 &msm_gpio 38 0>;
 	interrupt-names = "hc_irq", "pwr_irq", "status_irq";
 	cd-gpios = <&msm_gpio 38 0x1>;
+	wp-gpios = <&msm_gpio 121 0x0>;
 
 	status = "ok";
 };
