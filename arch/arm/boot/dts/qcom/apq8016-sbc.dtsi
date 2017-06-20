@@ -402,7 +402,7 @@
 	pinctrl-0 = <&mdss_dsi_active &mdss_te_active>;
 	pinctrl-1 = <&mdss_dsi_suspend &mdss_te_suspend>;
 
-	qcom,platform-reset-gpio = <&msm_gpio 25 0>;
+	//qcom,platform-reset-gpio = <&msm_gpio 25 0>;
 
 	qcom,panel-supply-entries {
 			#address-cells = <1>;
@@ -810,6 +810,3 @@
 		};
 	};
 };
-
-
-
