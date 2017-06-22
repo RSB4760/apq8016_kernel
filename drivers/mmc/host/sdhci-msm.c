@@ -3314,6 +3314,9 @@ static int sdhci_msm_probe(struct platform_device *pdev)
 	msm_host->mmc = host->mmc;
 	msm_host->pdev = pdev;
 
+	//[Advantech] Get WP GPIO
+	mmc_of_parse(host->mmc);
+
 	/* Extract platform data */
 	if (pdev->dev.of_node) {
 		ret = of_alias_get_id(pdev->dev.of_node, "sdhc");
@@ -3583,13 +3586,14 @@ static int sdhci_msm_probe(struct platform_device *pdev)
 		 */
 		sdhci_msm_setup_pins(msm_host->pdata, true);
 
-		ret = mmc_gpio_request_cd(msm_host->mmc,
+		//[Advantech] We already do it at mmc_of_parse() function. Skip this!
+		/*ret = mmc_gpio_request_cd(msm_host->mmc,
 				msm_host->pdata->status_gpio);
 		if (ret) {
 			dev_err(&pdev->dev, "%s: Failed to request card detection IRQ %d\n",
 					__func__, ret);
 			goto vreg_deinit;
-		}
+		}*/
 	}
 
 	if ((sdhci_readl(host, SDHCI_CAPABILITIES) & SDHCI_CAN_64BIT) &&
