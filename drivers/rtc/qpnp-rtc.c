@@ -20,6 +20,7 @@
 #include <linux/spmi.h>
 #include <linux/spinlock.h>
 #include <linux/spmi.h>
+#include <linux/fs.h>
 
 /* RTC/ALARM Register offsets */
 #define REG_OFFSET_ALARM_RW	0x40
@@ -44,6 +45,7 @@
 
 #define TO_SECS(arr)		(arr[0] | (arr[1] << 8) | (arr[2] << 16) | \
 							(arr[3] << 24))
+#define RTC_OFFSET_FILE	"/data/rtc_offset"
 
 /* Module parameter to control power-on-alarm */
 static bool poweron_alarm;
@@ -63,6 +65,9 @@ struct qpnp_rtc {
 	struct rtc_device *rtc;
 	struct spmi_device *spmi;
 	spinlock_t alarm_ctrl_lock;
+	/* RTC write is disabled on some chips, so use file to get/set offset */
+	bool rtc_offset_is_valid;
+	long long rtc_offset_seconds;
 };
 
 static int qpnp_read_wrapper(struct qpnp_rtc *rtc_dd, u8 *rtc_val,
@@ -97,22 +102,148 @@ static int qpnp_write_wrapper(struct qpnp_rtc *rtc_dd, u8 *rtc_val,
 }
 
 static int
+qpnp_rtc_read_time(struct device *dev, struct rtc_time *tm)
+{
+	int rc;
+	u8 value[4], reg;
+	unsigned long secs;
+	struct qpnp_rtc *rtc_dd = dev_get_drvdata(dev);
+
+	rc = qpnp_read_wrapper(rtc_dd, value,
+				rtc_dd->rtc_base + REG_OFFSET_RTC_READ,
+				NUM_8_BIT_RTC_REGS);
+	if (rc) {
+		dev_err(dev, "Read from RTC reg failed\n");
+		return rc;
+	}
+
+	/*
+	 * Read the LSB again and check if there has been a carry over
+	 * If there is, redo the read operation
+	 */
+	rc = qpnp_read_wrapper(rtc_dd, &reg,
+				rtc_dd->rtc_base + REG_OFFSET_RTC_READ, 1);
+	if (rc) {
+		dev_err(dev, "Read from RTC reg failed\n");
+		return rc;
+	}
+
+	if (reg < value[0]) {
+		rc = qpnp_read_wrapper(rtc_dd, value,
+				rtc_dd->rtc_base + REG_OFFSET_RTC_READ,
+				NUM_8_BIT_RTC_REGS);
+		if (rc) {
+			dev_err(dev, "Read from RTC reg failed\n");
+			return rc;
+		}
+	}
+
+	secs = TO_SECS(value);
+
+	if (!rtc_dd->rtc_write_enable && !rtc_dd->rtc_offset_is_valid) {
+		/* read offset from file */
+		struct file* rtc_off_fp = filp_open(RTC_OFFSET_FILE,
+					O_CREAT | O_RDWR ,
+					0600);
+		if (IS_ERR(rtc_off_fp))
+			dev_err(dev, "RTC can't open offset file\n");
+		else {
+			int count = kernel_read(rtc_off_fp, 0,
+					(char*)&rtc_dd->rtc_offset_seconds,
+					sizeof(rtc_dd->rtc_offset_seconds));
+
+			if (count < sizeof(rtc_dd->rtc_offset_seconds))
+				dev_err(dev, "RTC can't read offset file\n");
+			else
+				rtc_dd->rtc_offset_is_valid = true;
+			filp_close(rtc_off_fp,NULL);
+		}
+	}
+
+	if (rtc_dd->rtc_offset_is_valid) {
+		long long total_sec = rtc_dd->rtc_offset_seconds + secs;
+
+		if (total_sec < 0 || total_sec > UINT_MAX)
+			dev_dbg(dev, "Integer overflow decected");
+
+		secs = (unsigned long)total_sec;
+	}
+
+	rtc_time_to_tm(secs, tm);
+
+	rc = rtc_valid_tm(tm);
+	if (rc) {
+		dev_err(dev, "Invalid time read from RTC\n");
+		return rc;
+	}
+
+	dev_dbg(dev, "secs = %lu, h:m:s == %d:%d:%d, d/m/y = %d/%d/%d\n",
+			secs, tm->tm_hour, tm->tm_min, tm->tm_sec,
+			tm->tm_mday, tm->tm_mon, tm->tm_year);
+
+	return 0;
+}
+
+static int
 qpnp_rtc_set_time(struct device *dev, struct rtc_time *tm)
 {
 	int rc;
-	unsigned long secs, irq_flags;
+	unsigned long secs, temp_secs, irq_flags;
 	u8 value[4], reg = 0, alarm_enabled = 0, ctrl_reg;
 	u8 rtc_disabled = 0, rtc_ctrl_reg;
 	struct qpnp_rtc *rtc_dd = dev_get_drvdata(dev);
 
 	rtc_tm_to_time(tm, &secs);
+	temp_secs = secs;
 
 	value[0] = secs & 0xFF;
 	value[1] = (secs >> 8) & 0xFF;
 	value[2] = (secs >> 16) & 0xFF;
 	value[3] = (secs >> 24) & 0xFF;
 
+	secs = temp_secs;
+
 	dev_dbg(dev, "Seconds value to be written to RTC = %lu\n", secs);
+
+	if (!rtc_dd->rtc_write_enable) {
+		struct rtc_time temp;
+		unsigned long temp_sec = 0;
+
+		rc = qpnp_rtc_read_time(dev,&temp);
+		if (!rc) {
+			/* convert time to seconds */
+			rtc_tm_to_time(&temp, &temp_sec);
+			/* remove old offset added in read */
+			if (rtc_dd->rtc_offset_is_valid)
+				temp_sec -= rtc_dd->rtc_offset_seconds;
+
+			/* update/set  offset */
+			rtc_dd->rtc_offset_is_valid = true;
+			rtc_dd->rtc_offset_seconds = secs - temp_sec;
+		}
+
+		if (rtc_dd->rtc_offset_is_valid) {
+			struct file* rtc_off_fp = filp_open(RTC_OFFSET_FILE,
+						O_CREAT | O_RDWR ,
+						0600);
+			if (IS_ERR(rtc_off_fp))
+				dev_err(dev, "RTC can't open offset file\n");
+			else {
+				int count = kernel_write(rtc_off_fp,
+					(char*)&rtc_dd->rtc_offset_seconds,
+					sizeof(rtc_dd->rtc_offset_seconds),
+					0);
+
+				if (count < sizeof(rtc_dd->rtc_offset_seconds))
+					dev_err(dev,"RTC can't write offset\n");
+				else
+					rtc_dd->rtc_offset_is_valid = true;
+				filp_close(rtc_off_fp,NULL);
+				return rc;
+			}
+		}
+		return -EACCES;
+	}
 
 	spin_lock_irqsave(&rtc_dd->alarm_ctrl_lock, irq_flags);
 	ctrl_reg = rtc_dd->alarm_ctrl_reg1;
@@ -228,60 +359,6 @@ rtc_rw_fail:
 }
 
 static int
-qpnp_rtc_read_time(struct device *dev, struct rtc_time *tm)
-{
-	int rc;
-	u8 value[4], reg;
-	unsigned long secs;
-	struct qpnp_rtc *rtc_dd = dev_get_drvdata(dev);
-
-	rc = qpnp_read_wrapper(rtc_dd, value,
-				rtc_dd->rtc_base + REG_OFFSET_RTC_READ,
-				NUM_8_BIT_RTC_REGS);
-	if (rc) {
-		dev_err(dev, "Read from RTC reg failed\n");
-		return rc;
-	}
-
-	/*
-	 * Read the LSB again and check if there has been a carry over
-	 * If there is, redo the read operation
-	 */
-	rc = qpnp_read_wrapper(rtc_dd, &reg,
-				rtc_dd->rtc_base + REG_OFFSET_RTC_READ, 1);
-	if (rc) {
-		dev_err(dev, "Read from RTC reg failed\n");
-		return rc;
-	}
-
-	if (reg < value[0]) {
-		rc = qpnp_read_wrapper(rtc_dd, value,
-				rtc_dd->rtc_base + REG_OFFSET_RTC_READ,
-				NUM_8_BIT_RTC_REGS);
-		if (rc) {
-			dev_err(dev, "Read from RTC reg failed\n");
-			return rc;
-		}
-	}
-
-	secs = TO_SECS(value);
-
-	rtc_time_to_tm(secs, tm);
-
-	rc = rtc_valid_tm(tm);
-	if (rc) {
-		dev_err(dev, "Invalid time read from RTC\n");
-		return rc;
-	}
-
-	dev_dbg(dev, "secs = %lu, h:m:s == %d:%d:%d, d/m/y = %d/%d/%d\n",
-			secs, tm->tm_hour, tm->tm_min, tm->tm_sec,
-			tm->tm_mday, tm->tm_mon, tm->tm_year);
-
-	return 0;
-}
-
-static int
 qpnp_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
 {
 	int rc;
@@ -291,6 +368,11 @@ qpnp_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
 	struct rtc_time rtc_tm;
 
 	rtc_tm_to_time(&alarm->time, &secs);
+
+	if (rtc_dd->rtc_offset_is_valid) {
+		if (secs > rtc_dd->rtc_offset_seconds)
+		secs -= rtc_dd->rtc_offset_seconds;
+	}
 
 	/*
 	 * Read the current RTC time and verify if the alarm time is in the
@@ -362,6 +444,11 @@ qpnp_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alarm)
 	}
 
 	secs = TO_SECS(value);
+
+	if (rtc_dd->rtc_offset_is_valid) {
+		secs += rtc_dd->rtc_offset_seconds;
+	}
+
 	rtc_time_to_tm(secs, &alarm->time);
 
 	rc = rtc_valid_tm(&alarm->time);
@@ -418,6 +505,7 @@ rtc_rw_fail:
 
 static struct rtc_class_ops qpnp_rtc_ops = {
 	.read_time = qpnp_rtc_read_time,
+	.set_time = qpnp_rtc_set_time,
 	.set_alarm = qpnp_rtc_set_alarm,
 	.read_alarm = qpnp_rtc_read_alarm,
 	.alarm_irq_enable = qpnp_rtc_alarm_irq_enable,
@@ -484,6 +572,9 @@ static int qpnp_rtc_probe(struct spmi_device *spmi)
 			"Error reading rtc_write_enable property %d\n", rc);
 		return rc;
 	}
+
+	rtc_dd->rtc_offset_is_valid = false;
+	rtc_dd->rtc_offset_seconds = 0;
 
 	rc = of_property_read_u32(spmi->dev.of_node,
 						"qcom,qpnp-rtc-alarm-pwrup",
@@ -578,9 +669,6 @@ static int qpnp_rtc_probe(struct spmi_device *spmi)
 		dev_err(&spmi->dev, "SPMI write failed!\n");
 		goto fail_rtc_enable;
 	}
-
-	if (rtc_dd->rtc_write_enable == true)
-		qpnp_rtc_ops.set_time = qpnp_rtc_set_time;
 
 	dev_set_drvdata(&spmi->dev, rtc_dd);
 
