@@ -1828,6 +1828,7 @@ static int msm_spi_transfer_one_message(struct spi_master *master,
 		return -EINVAL;
 
 	list_for_each_entry(tr, &msg->transfers, transfer_list) {
+		msg->actual_length += tr->len;
 		/* Check message parameters */
 		if (tr->speed_hz > dd->pdata->max_clock_speed ||
 		    (tr->bits_per_word &&
