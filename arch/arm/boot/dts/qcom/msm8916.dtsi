@@ -1400,30 +1400,24 @@
 
 	spi_0: spi@78b9000 { /* BLSP1 QUP3 */
 		compatible = "qcom,spi-qup-v2";
-        #address-cells = <1>;
-        #size-cells = <0>;
-        reg-names = "spi_physical", "spi_bam_physical";
-        //reg = <0x78b9000 0x600>,
-        //	<0x7884000 0x23000>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		reg-names = "spi_physical";
 		reg = <0x78b9000 0x600>;
-        interrupt-names = "spi_irq", "spi_bam_irq";
-        //interrupts = <0 99 0>, <0 238 0>;
-		interrupts = <0 99 1>;
-        spi-max-frequency = <50000000>;
-        pinctrl-names = "spi_default", "spi_sleep";
-        pinctrl-0 = <&spi2_default &spi2_cs2_active>;
+		interrupt-names = "spi_irq";
+		interrupts = <0 99 0>;
+		spi-max-frequency = <50000000>;
+		pinctrl-names = "spi_default", "spi_sleep";
+		pinctrl-0 = <&spi2_default &spi2_cs2_active>;
 		pinctrl-1 = <&spi2_sleep &spi2_cs2_sleep>;
 		clocks = <&clock_gcc clk_gcc_blsp1_ahb_clk>,
 			 <&clock_gcc clk_gcc_blsp1_qup5_spi_apps_clk>;
 		clock-names = "iface_clk", "core_clk";
-        qcom,infinite-mode = <0>;
-		qcom,use-bam;
+		qcom,infinite-mode = <0>;
 		qcom,use-pinctrl;
-        qcom,ver-reg-exists;
-        qcom,bam-consumer-pipe-index = <12>;
-        qcom,bam-producer-pipe-index = <13>;
-        qcom,master-id = <86>;
-    };
+		qcom,ver-reg-exists;
+		qcom,master-id = <86>;
+	};
 
 	dma_blsp1: qcom,sps-dma@7884000 { /* BLSP1 */
 		#dma-cells = <4>;
