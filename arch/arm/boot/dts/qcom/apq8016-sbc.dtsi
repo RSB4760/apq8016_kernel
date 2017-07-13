@@ -718,9 +718,6 @@
 			qcom,pon_1 {
 				qcom,s2-type = <7>;
 			};
-			qcom,pon_2 {
-				linux,code = <408>;
-			};
 		};
 	};
 };
