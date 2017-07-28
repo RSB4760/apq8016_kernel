@@ -15,6 +15,8 @@
 		compatible = "qcom,msm-tlmm-8916";
 		reg = <0x1000000 0x300000>;
 		interrupts = <0 208 0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&m2_4g>;
 
 		/*General purpose pins*/
 		gp: gp {
@@ -27,6 +29,18 @@
 				interrupt-controller;
 				#interrupt-cells = <2>;
 				num_irqs = <122>;
+			};
+		};
+
+		m2-4g-pins {
+			qcom,pins = <&gp 70>, <&gp 71>, <&gp 74>, <&gp 75>;
+			qcom,pin-func = <0>;
+			qcom,num-grp-pins = <4>;
+			label = "m2-4g-pins";
+			m2_4g: m2_4g_def {
+				drive-strength = <8>;
+				bias-disable;
+				output-high;
 			};
 		};
 
