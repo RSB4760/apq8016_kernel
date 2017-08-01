@@ -50,6 +50,11 @@
 			compatible = "sii,s35390a";
 			reg = <0x30>;
 		};
+
+		eeprom1: 24c256@50 {
+			compatible = "atmel,24c256";
+			reg = <0x50>;
+		};
 	};
 
 	/*
