@@ -1463,6 +1463,12 @@ static int rpm_vreg_device_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
+	// [Advantech] Keep L11 alive for usage stability
+	if ( rpm_vreg->resource_id == 11 ) {
+		pr_info("do not handle l11!\n");
+		return rc;
+	}
+
 	reg = kzalloc(sizeof(struct rpm_regulator), GFP_KERNEL);
 	if (reg == NULL) {
 		dev_err(dev, "%s: could not allocate memory for reg\n",
