@@ -426,7 +426,7 @@
 	};
 
 	blsp1_uart1: uart@78af000 {
-		compatible = "qcom,msm-hsuart-v14";
+		compatible = "qcom,msm-lsuart-v14";
 		reg = <0x78af000 0x200>,
 		      <0x7884000 0x23000>;
 		reg-names = "core_mem", "bam_mem";
